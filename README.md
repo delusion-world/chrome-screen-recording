@@ -37,7 +37,7 @@ Copy the slash command and skill into your project or global Claude Code config:
 mkdir -p .claude/commands .claude/skills
 
 # Copy slash command
-cp ~/.claude/plugins/screencast/commands/screen-record.md .claude/commands/
+cp ~/.claude/plugins/screencast/commands/screencast.md .claude/commands/
 
 # Copy skill
 cp -r ~/.claude/plugins/screencast/skills/screencast .claude/skills/
@@ -47,7 +47,7 @@ cp -r ~/.claude/plugins/screencast/skills/screencast .claude/skills/
 
 ```bash
 # Copy to global Claude Code config
-cp ~/.claude/plugins/screencast/commands/screen-record.md ~/.claude/commands/
+cp ~/.claude/plugins/screencast/commands/screencast.md ~/.claude/commands/
 cp -r ~/.claude/plugins/screencast/skills/screencast ~/.claude/skills/
 ```
 
@@ -65,7 +65,7 @@ cp -r ~/.claude/plugins/screencast/skills/screencast ~/.claude/skills/
 In Claude Code, run:
 
 ```
-/screen-record setup
+/screencast setup
 ```
 
 This creates a "Chrome Recording" scene in OBS with a screen capture source targeting Chrome.
@@ -73,11 +73,11 @@ This creates a "Chrome Recording" scene in OBS with a screen capture source targ
 ## Usage
 
 ```
-/screen-record start    # Start recording Chrome
-/screen-record stop     # Stop recording, get MP4 path
-/screen-record status   # Check connection & recording state
-/screen-record setup    # Create OBS scene for Chrome capture
-/screen-record dir /path/to/output  # Set output directory
+/screencast start    # Start recording Chrome
+/screencast stop     # Stop recording, get MP4 path
+/screencast status   # Check connection & recording state
+/screencast setup    # Create OBS scene for Chrome capture
+/screencast dir /path/to/output  # Set output directory
 ```
 
 Or just say "record my screen" and the skill triggers automatically.
@@ -97,7 +97,7 @@ The controller script (`scripts/obs-controller.mjs`) communicates with OBS via `
 By default, recordings are saved to `/tmp/obs-recordings/`. Change with:
 
 ```
-/screen-record dir /path/to/your/preferred/directory
+/screencast dir /path/to/your/preferred/directory
 ```
 
 ## Configuration

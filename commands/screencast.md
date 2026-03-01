@@ -2,7 +2,7 @@
 allowed-tools: Bash
 ---
 
-# /screen-record - Chrome Screen Recording via OBS
+# /screencast - Chrome Screen Recording via OBS
 
 You are controlling OBS Studio screen recording through the `obs-controller.mjs` script.
 
@@ -21,7 +21,7 @@ SCRIPT="${SCREENCAST_DIR}/scripts/obs-controller.mjs"
 
 ## Commands
 
-The user invoked `/screen-record` with these possible arguments:
+The user invoked `/screencast` with these possible arguments:
 
 - **start** - Start recording Chrome screen
 - **stop** - Stop recording and get the MP4 file path
