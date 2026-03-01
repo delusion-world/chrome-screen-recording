@@ -2,6 +2,8 @@
 
 Record any application's screen as MP4 using OBS Studio, controlled directly from Claude Code. Supports application capture, window capture, and full display capture with auto-adapting resolution.
 
+> If you find this skill useful, please star this repo to show your support!
+
 ## Prerequisites
 
 - **macOS** (uses ScreenCaptureKit for screen capture)
