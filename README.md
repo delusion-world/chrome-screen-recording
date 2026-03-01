@@ -1,6 +1,6 @@
 # Screencast for Claude Code
 
-Record your Chrome browser screen as MP4 using OBS Studio, controlled directly from Claude Code.
+Record any application's screen as MP4 using OBS Studio, controlled directly from Claude Code.
 
 ## Prerequisites
 
@@ -37,7 +37,7 @@ Copy the slash command and skill into your project or global Claude Code config:
 mkdir -p .claude/commands .claude/skills
 
 # Copy slash command
-cp ~/.claude/plugins/screencast/commands/screencast.md.example .claude/commands/
+cp ~/.claude/plugins/screencast/commands/screencast.md.example .claude/commands/screencast.md
 
 # Copy skill
 cp -r ~/.claude/plugins/screencast/skills/screencast .claude/skills/
@@ -46,8 +46,8 @@ cp -r ~/.claude/plugins/screencast/skills/screencast .claude/skills/
 **Option B: Global** (all projects)
 
 ```bash
-# Copy to global Claude Code config
-cp ~/.claude/plugins/screencast/commands/screencast.md.example ~/.claude/commands/
+mkdir -p ~/.claude/commands ~/.claude/skills
+cp ~/.claude/plugins/screencast/commands/screencast.md.example ~/.claude/commands/screencast.md
 cp -r ~/.claude/plugins/screencast/skills/screencast ~/.claude/skills/
 ```
 
@@ -68,27 +68,54 @@ In Claude Code, run:
 /screencast setup
 ```
 
-This creates a "Chrome Recording" scene in OBS with a screen capture source targeting Chrome.
+This creates a "Screencast" scene in OBS with a screen capture source targeting Chrome by default.
 
 ## Usage
 
 ```
-/screencast start    # Start recording Chrome
-/screencast stop     # Stop recording, get MP4 path
-/screencast status   # Check connection & recording state
-/screencast setup    # Create OBS scene for Chrome capture
-/screencast dir /path/to/output  # Set output directory
+/screencast start                    # Start recording
+/screencast stop                     # Stop recording, get MP4 path
+/screencast status                   # Check connection, recording state, target app
+/screencast setup                    # Create OBS scene (default: Chrome)
+/screencast setup com.apple.Safari   # Create OBS scene for Safari
+/screencast app com.apple.Safari     # Switch target to Safari
+/screencast app                      # Show current target app
+/screencast dir /path/to/output      # Set output directory
 ```
 
-Or just say "record my screen" and the skill triggers automatically.
+Or just say "record Safari" / "record my screen" and the skill triggers automatically.
+
+## Supported Applications
+
+Switch recording target to any macOS application by bundle ID:
+
+| App | Bundle ID |
+|-----|-----------|
+| Chrome | `com.google.Chrome` |
+| Safari | `com.apple.Safari` |
+| Firefox | `org.mozilla.firefox` |
+| VS Code | `com.microsoft.VSCode` |
+| Figma | `com.figma.Desktop` |
+| Terminal | `com.apple.Terminal` |
+| iTerm2 | `com.googlecode.iterm2` |
+| Slack | `com.tinyspeck.slackmacgap` |
+| Discord | `com.hnc.Discord` |
+| Zoom | `us.zoom.xos` |
+
+To find any app's bundle ID:
+
+```bash
+osascript -e 'id of app "AppName"'
+```
 
 ## How It Works
 
 This plugin uses OBS Studio's WebSocket API (v5) to control recording:
 
-1. **Setup** creates a dedicated "Chrome Recording" scene in OBS with a macOS ScreenCaptureKit source targeting Chrome
-2. **Start** begins OBS recording in MP4 format
-3. **Stop** ends recording and returns the file path
+1. **Setup** creates a "Screencast" scene in OBS with a macOS ScreenCaptureKit application capture source
+2. **App** switches the capture target to any macOS application
+3. **Start** begins OBS recording in MP4 format
+4. **Stop** ends recording and returns the file path
 
 The controller script (`scripts/obs-controller.mjs`) communicates with OBS via `obs-websocket-js` and outputs JSON for Claude to parse.
 
@@ -125,9 +152,10 @@ export SCREENCAST_DIR="/path/to/screencast"
 | Issue | Solution |
 |-------|----------|
 | "ECONNREFUSED" | Open OBS and enable WebSocket Server |
-| Auth failure | Disable authentication in OBS WebSocket settings |
-| No screen capture | Grant Screen Recording permission in System Settings |
+| Auth failure | Disable authentication in OBS WebSocket settings, or set `OBS_WS_PASSWORD` |
+| Black screen | Grant Screen Recording permission in System Settings > Privacy & Security |
 | Source creation failed | Manually add a Screen Capture source in OBS |
+| Unknown app | Run `osascript -e 'id of app "Name"'` to find bundle ID |
 
 ## License
 
