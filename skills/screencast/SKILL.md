@@ -21,7 +21,7 @@ This skill records Chrome browser screen as MP4 video using OBS Studio's WebSock
 
 Locate the script with:
 ```bash
-SCRIPT="$(find ~/. -maxdepth 5 -name obs-controller.mjs -path '*/screencast/*' -print -quit 2>/dev/null)"
+SCRIPT="$(find ~ -maxdepth 5 -name obs-controller.mjs -path '*/screencast/*' -print -quit 2>/dev/null)"
 ```
 
 Or if `SCREENCAST_DIR` env var is set:
