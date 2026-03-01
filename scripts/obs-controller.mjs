@@ -44,6 +44,51 @@ async function connect() {
   return obs;
 }
 
+async function adaptCanvas(obs) {
+  try {
+    const items = await obs.call("GetSceneItemList", {
+      sceneName: SCENE_NAME,
+    });
+    const item = items.sceneItems.find((i) => i.sourceName === SOURCE_NAME);
+    if (!item) return;
+
+    // Wait briefly for source to initialize after app switch
+    await new Promise((r) => setTimeout(r, 300));
+
+    const t = await obs.call("GetSceneItemTransform", {
+      sceneName: SCENE_NAME,
+      sceneItemId: item.sceneItemId,
+    });
+
+    const srcW = t.sceneItemTransform.sourceWidth;
+    const srcH = t.sceneItemTransform.sourceHeight;
+    if (!srcW || !srcH) return;
+
+    // Set canvas and output to match source
+    await obs.call("SetVideoSettings", {
+      baseWidth: srcW,
+      baseHeight: srcH,
+      outputWidth: srcW,
+      outputHeight: srcH,
+      fpsNumerator: 30,
+      fpsDenominator: 1,
+    });
+
+    // Reset transform to 1:1
+    await obs.call("SetSceneItemTransform", {
+      sceneName: SCENE_NAME,
+      sceneItemId: item.sceneItemId,
+      sceneItemTransform: {
+        boundsType: "OBS_BOUNDS_NONE",
+        scaleX: 1,
+        scaleY: 1,
+        positionX: 0,
+        positionY: 0,
+      },
+    });
+  } catch (_) {}
+}
+
 async function cmdStatus() {
   const obs = await connect();
   try {
@@ -94,6 +139,7 @@ async function cmdStart() {
       );
     }
 
+    await adaptCanvas(obs);
     await obs.call("StartRecord");
     await new Promise((r) => setTimeout(r, 500));
     const status = await obs.call("GetRecordStatus");
@@ -160,6 +206,8 @@ async function cmdApp(bundleId) {
       },
       overlay: true,
     });
+
+    await adaptCanvas(obs);
 
     return {
       ok: true,
@@ -272,6 +320,8 @@ async function cmdSetup(bundleId) {
         }
       }
     }
+
+    await adaptCanvas(obs);
 
     return {
       ok: true,
