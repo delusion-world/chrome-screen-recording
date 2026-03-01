@@ -38,6 +38,8 @@ node "$SCRIPT" stop                # Stop recording (returns MP4 path)
 node "$SCRIPT" setup [bundle-id]   # Setup scene for app (default: Chrome)
 node "$SCRIPT" app [bundle-id]     # Get or switch target application
 node "$SCRIPT" mode [display|window|application]  # Switch capture mode
+node "$SCRIPT" window              # List all available windows
+node "$SCRIPT" window [search]     # Select and capture a specific window
 node "$SCRIPT" dir [path]          # Get/set recording directory
 ```
 
@@ -76,7 +78,20 @@ node "$SCRIPT" mode window        # Record specific window (requires OBS window 
 
 - **display**: Records the full screen. Use when user says "record my screen" or "record the desktop".
 - **application**: Records all windows of a specific app. Best for most use cases. Default mode.
-- **window**: Records a single window. Requires manual window selection in OBS UI.
+- **window**: Records a single window. Use the `window` command to select programmatically.
+
+## Window Selection
+
+To record a specific window, use the `window` command with a search term:
+
+```bash
+node "$SCRIPT" window                        # List all windows
+node "$SCRIPT" window "Chrome] mech"         # Select Chrome window titled "mech..."
+node "$SCRIPT" window "iTerm2] tmux"         # Select iTerm2 tmux window
+node "$SCRIPT" window "Cursor] vite"         # Select Cursor editor window
+```
+
+The search is case-insensitive and matches against `[AppName] WindowTitle`. This automatically switches to window capture mode.
 
 ## Typical Workflow
 

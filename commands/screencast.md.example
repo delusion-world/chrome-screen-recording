@@ -27,6 +27,8 @@ The user invoked `/screencast` with these possible arguments:
 - **setup [bundle-id]** - Create OBS scene for app capture (default: Chrome)
 - **app [bundle-id]** - Get or switch the target application
 - **mode [display|window|application]** - Switch capture mode
+- **window** - List all available windows
+- **window [search]** - Select and capture a specific window by name
 - **dir [path]** - Get or set the recording output directory
 
 ## How to Execute
@@ -70,6 +72,16 @@ node "$SCRIPT" mode window        # Record specific window
 
 Use `display` when user says "record my screen". Use `application` (default) for recording a specific app.
 
+## Window Selection
+
+Select a specific window to record:
+```bash
+node "$SCRIPT" window 2>/dev/null                  # List all windows
+node "$SCRIPT" window "Chrome] mech" 2>/dev/null   # Select by search
+```
+
+Search is case-insensitive, matches `[AppName] WindowTitle`. Auto-switches to window capture mode.
+
 ## Handling Results
 
 ### On success (`ok: true`):
@@ -79,6 +91,7 @@ Use `display` when user says "record my screen". Use `application` (default) for
 - **setup**: Confirm scene creation and which app is being captured
 - **app**: Show current target or confirm switch
 - **mode**: Show current mode or confirm switch
+- **window**: List all windows or confirm window selection
 - **dir**: Show current or newly set recording directory
 
 ### On error (`ok: false`):
