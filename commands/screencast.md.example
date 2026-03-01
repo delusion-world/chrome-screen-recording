@@ -2,13 +2,11 @@
 allowed-tools: Bash
 ---
 
-# /screencast - Chrome Screen Recording via OBS
+# /screencast - Screen Recording via OBS
 
-You are controlling OBS Studio screen recording through the `obs-controller.mjs` script.
+Record any application's screen as MP4 using OBS Studio.
 
 ## Finding the Script
-
-Run this to locate the controller script:
 
 ```bash
 SCRIPT="$(find ~ -maxdepth 5 -name obs-controller.mjs -path '*/screencast/*' -print -quit 2>/dev/null)"
@@ -23,31 +21,52 @@ SCRIPT="${SCREENCAST_DIR}/scripts/obs-controller.mjs"
 
 The user invoked `/screencast` with these possible arguments:
 
-- **start** - Start recording Chrome screen
+- **start** - Start recording
 - **stop** - Stop recording and get the MP4 file path
-- **status** - Check OBS connection and recording state
-- **setup** - Create OBS scene for Chrome capture and set MP4 format
+- **status** - Check OBS connection, recording state, and current target app
+- **setup [bundle-id]** - Create OBS scene for app capture (default: Chrome)
+- **app [bundle-id]** - Get or switch the target application
 - **dir [path]** - Get or set the recording output directory
 
 ## How to Execute
 
-Run the controller script with the appropriate subcommand:
-
 ```bash
-node "$SCRIPT" <command> [args]
+node "$SCRIPT" <command> [args] 2>/dev/null
 ```
 
-Suppress stderr to avoid noisy library output: append `2>/dev/null`
-
 The script outputs JSON. Parse the JSON and present results in a human-readable format.
+
+## Switching Target Application
+
+When the user specifies an app to record, determine the macOS bundle ID and run:
+```bash
+node "$SCRIPT" app <bundle-id> 2>/dev/null
+```
+
+Common bundle IDs:
+- Chrome: `com.google.Chrome`
+- Safari: `com.apple.Safari`
+- Firefox: `org.mozilla.firefox`
+- VS Code: `com.microsoft.VSCode`
+- Figma: `com.figma.Desktop`
+- Terminal: `com.apple.Terminal`
+- iTerm2: `com.googlecode.iterm2`
+- Slack: `com.tinyspeck.slackmacgap`
+- Discord: `com.hnc.Discord`
+
+To look up an unknown app's bundle ID:
+```bash
+osascript -e 'id of app "AppName"'
+```
 
 ## Handling Results
 
 ### On success (`ok: true`):
-- **status**: Report connection state, whether recording is active, current scene, timecode
+- **status**: Report connection state, recording status, current target app, timecode
 - **start**: Confirm recording has started
-- **stop**: Report the output MP4 file path so the user can find their recording
-- **setup**: Confirm scene creation and source configuration
+- **stop**: Report the output MP4 file path
+- **setup**: Confirm scene creation and which app is being captured
+- **app**: Show current target or confirm switch
 - **dir**: Show current or newly set recording directory
 
 ### On error (`ok: false`):
@@ -60,7 +79,6 @@ The script outputs JSON. Parse the JSON and present results in a human-readable 
 
 ## First-Time Setup Flow
 
-If the user hasn't set up yet, guide them:
 1. Run `bash <plugin-dir>/scripts/setup.sh` to install npm dependencies
 2. Open OBS and enable WebSocket Server (Tools > WebSocket Server Settings)
-3. Run the `setup` subcommand to create the Chrome Recording scene
+3. Run the `setup` subcommand to create the Screencast scene

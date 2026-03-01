@@ -4,9 +4,10 @@ import OBSWebSocket from "obs-websocket-js";
 
 const OBS_WS_URL = "ws://127.0.0.1:4455";
 const OBS_PASSWORD = process.env.OBS_WS_PASSWORD || undefined;
-const SCENE_NAME = "Chrome Recording";
-const SOURCE_NAME = "Chrome Window Capture";
+const SCENE_NAME = "Screencast";
+const SOURCE_NAME = "Screencast Capture";
 const DEFAULT_RECORD_DIR = "/tmp/obs-recordings";
+const DEFAULT_APP = "com.google.Chrome";
 
 class ControllerError extends Error {
   constructor(message) {
@@ -49,17 +50,22 @@ async function cmdStatus() {
     const recordStatus = await obs.call("GetRecordStatus");
     const sceneList = await obs.call("GetSceneList");
     const currentScene = sceneList.currentProgramSceneName;
-    const hasRecordingScene = sceneList.scenes.some(
-      (s) => s.sceneName === SCENE_NAME
-    );
+    const hasScene = sceneList.scenes.some((s) => s.sceneName === SCENE_NAME);
 
     let recordDir = null;
     try {
       const dirResp = await obs.call("GetRecordDirectory");
       recordDir = dirResp.recordDirectory;
-    } catch (_) {
-      // older OBS versions may not support this
-    }
+    } catch (_) {}
+
+    // Get current app target
+    let currentApp = null;
+    try {
+      const settings = await obs.call("GetInputSettings", {
+        inputName: SOURCE_NAME,
+      });
+      currentApp = settings.inputSettings.application || null;
+    } catch (_) {}
 
     return {
       ok: true,
@@ -69,7 +75,8 @@ async function cmdStatus() {
       timecode: recordStatus.outputTimecode || null,
       bytes: recordStatus.outputBytes || 0,
       currentScene,
-      hasRecordingScene,
+      hasScene,
+      currentApp,
       recordDirectory: recordDir,
     };
   } finally {
@@ -123,7 +130,49 @@ async function cmdStop() {
   }
 }
 
-async function cmdSetup() {
+async function cmdApp(bundleId) {
+  const obs = await connect();
+  try {
+    if (!bundleId) {
+      // Get current app
+      try {
+        const settings = await obs.call("GetInputSettings", {
+          inputName: SOURCE_NAME,
+        });
+        return {
+          ok: true,
+          application: settings.inputSettings.application || null,
+          type: settings.inputSettings.type,
+        };
+      } catch (_) {
+        throw new ControllerError(
+          "Source not found. Run 'setup' first."
+        );
+      }
+    }
+
+    // Change target app
+    await obs.call("SetInputSettings", {
+      inputName: SOURCE_NAME,
+      inputSettings: {
+        type: 2,
+        application: bundleId,
+      },
+      overlay: true,
+    });
+
+    return {
+      ok: true,
+      action: "set_app",
+      application: bundleId,
+    };
+  } finally {
+    obs.disconnect();
+  }
+}
+
+async function cmdSetup(bundleId) {
+  const app = bundleId || DEFAULT_APP;
   const obs = await connect();
   try {
     // 1. Set recording format to MP4 (both Simple and Advanced mode)
@@ -148,7 +197,7 @@ async function cmdSetup() {
       });
     } catch (_) {}
 
-    // 3. Create the Chrome Recording scene if it doesn't exist
+    // 3. Create scene if it doesn't exist
     const sceneList = await obs.call("GetSceneList");
     const sceneExists = sceneList.scenes.some(
       (s) => s.sceneName === SCENE_NAME
@@ -158,10 +207,10 @@ async function cmdSetup() {
       await obs.call("CreateScene", { sceneName: SCENE_NAME });
     }
 
-    // 4. Switch to the Chrome Recording scene
+    // 4. Switch to scene
     await obs.call("SetCurrentProgramScene", { sceneName: SCENE_NAME });
 
-    // 5. Add screen capture source if not already present
+    // 5. Add or update screen capture source
     let sourceExists = false;
     try {
       const items = await obs.call("GetSceneItemList", {
@@ -172,7 +221,18 @@ async function cmdSetup() {
       );
     } catch (_) {}
 
-    if (!sourceExists) {
+    if (sourceExists) {
+      // Update existing source to target the requested app
+      await obs.call("SetInputSettings", {
+        inputName: SOURCE_NAME,
+        inputSettings: {
+          type: 2,
+          application: app,
+          show_cursor: true,
+        },
+        overlay: true,
+      });
+    } else {
       try {
         await obs.call("CreateInput", {
           sceneName: SCENE_NAME,
@@ -180,8 +240,8 @@ async function cmdSetup() {
           inputKind: "screen_capture",
           inputSettings: {
             show_cursor: true,
-            type: 2, // 0=display, 1=window, 2=application
-            application: "com.google.Chrome",
+            type: 2,
+            application: app,
           },
           sceneItemEnabled: true,
         });
@@ -194,7 +254,7 @@ async function cmdSetup() {
             inputSettings: {
               show_cursor: true,
               type: 2,
-              application: "com.google.Chrome",
+              application: app,
             },
             sceneItemEnabled: true,
           });
@@ -205,7 +265,7 @@ async function cmdSetup() {
             scene: SCENE_NAME,
             sourceAdded: false,
             sourceWarning:
-              "Could not auto-create screen capture source. Please add a Screen Capture source manually in OBS for Chrome.",
+              "Could not auto-create screen capture source. Add manually in OBS.",
             recordDirectory: DEFAULT_RECORD_DIR,
             format: "mp4",
           };
@@ -218,7 +278,9 @@ async function cmdSetup() {
       action: "setup",
       scene: SCENE_NAME,
       source: SOURCE_NAME,
+      application: app,
       sourceAdded: !sourceExists,
+      sourceUpdated: sourceExists,
       recordDirectory: DEFAULT_RECORD_DIR,
       format: "mp4",
     };
@@ -266,7 +328,10 @@ async function main() {
         result = await cmdStop();
         break;
       case "setup":
-        result = await cmdSetup();
+        result = await cmdSetup(args[0]);
+        break;
+      case "app":
+        result = await cmdApp(args[0]);
         break;
       case "dir":
         result = await cmdDir(args[0]);
@@ -275,7 +340,7 @@ async function main() {
         console.log(
           JSON.stringify({
             ok: false,
-            error: `Unknown command: ${cmd}. Valid commands: status, start, stop, setup, dir [path]`,
+            error: `Unknown command: ${cmd}. Valid commands: status, start, stop, setup [bundle-id], app [bundle-id], dir [path]`,
           })
         );
         process.exit(1);
@@ -286,7 +351,10 @@ async function main() {
       console.log(JSON.stringify({ ok: false, error: err.message }));
     } else {
       console.log(
-        JSON.stringify({ ok: false, error: "Unexpected error: " + err.message })
+        JSON.stringify({
+          ok: false,
+          error: "Unexpected error: " + err.message,
+        })
       );
     }
     process.exit(1);
