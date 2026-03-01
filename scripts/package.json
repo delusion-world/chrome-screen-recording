@@ -1,0 +1,9 @@
+{
+  "name": "chrome-screen-recording-scripts",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "obs-websocket-js": "^5.0.7"
+  }
+}
